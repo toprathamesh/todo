@@ -30,6 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const eraserBtn = document.getElementById('eraser-btn');
 
     // Load saved data on page load
+    migrateData();
     loadItems('learnItems', learnList, 'learn');
     loadItems('planItems', planList, 'plan');
     loadItems('repoItems', repoList, 'repo');
@@ -287,6 +288,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Calendar Functions ---
     function renderCalendar() {
         const today = new Date();
+        today.setHours(0, 0, 0, 0); // Normalize today to the start of the day
         const month = today.getMonth();
         const year = today.getFullYear();
         const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -302,10 +304,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
         for (let day = 1; day <= daysInMonth; day++) {
             const dateStr = `${year}-${month + 1}-${day}`;
+            const cellDate = new Date(dateStr);
             const isPresent = attendance[dateStr];
-            const isToday = day === today.getDate();
+            const isToday = day === today.getDate() && month === today.getMonth() && year === today.getFullYear();
+            const isPast = cellDate < today;
+
+            let cellClass = '';
+            if (isToday) cellClass += 'today ';
+            if (isPresent) {
+                cellClass += 'present';
+            } else if (isPast) {
+                cellClass += 'absent';
+            }
             
-            calendarHtml += `<td class="${isToday ? 'today' : ''} ${isPresent ? 'present' : ''}" data-date="${dateStr}">${day}</td>`;
+            calendarHtml += `<td class="${cellClass}" data-date="${dateStr}">${day}</td>`;
             if ((firstDayOfMonth + day) % 7 === 0) {
                 calendarHtml += '</tr><tr>';
             }
@@ -317,6 +329,13 @@ document.addEventListener('DOMContentLoaded', () => {
         calendarElement.querySelectorAll('td[data-date]').forEach(cell => {
             cell.addEventListener('click', (e) => {
                 const dateStr = e.target.dataset.date;
+                const cellDate = new Date(dateStr);
+                
+                if (cellDate > today) {
+                    alert("You cannot mark future dates.");
+                    return; // Don't allow clicking future dates
+                }
+
                 let attendance = JSON.parse(localStorage.getItem('attendance')) || {};
                 attendance[dateStr] = !attendance[dateStr];
                 localStorage.setItem('attendance', JSON.stringify(attendance));
@@ -324,4 +343,43 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
     }
+
+    // --- Data Migration ---
+    function migrateData() {
+        const oldVideos = JSON.parse(localStorage.getItem('videos'));
+        const oldRepos = JSON.parse(localStorage.getItem('repos'));
+        let migrated = false;
+
+        if (oldVideos) {
+            const learnItems = oldVideos.map(videoId => ({
+                link: `https://www.youtube.com/watch?v=${videoId}`,
+                note: 'Migrated from old version.',
+                id: Date.now().toString() + videoId,
+                timestamp: new Date().toLocaleString()
+            }));
+            localStorage.setItem('learnItems', JSON.stringify(learnItems));
+            localStorage.removeItem('videos');
+            migrated = true;
+        }
+
+        if (oldRepos) {
+            const repoItems = oldRepos.map(repo => ({
+                ...repo,
+                timestamp: new Date().toLocaleString()
+            }));
+            localStorage.setItem('repoItems', JSON.stringify(repoItems));
+            localStorage.removeItem('repos');
+            migrated = true;
+        }
+
+        if (migrated) {
+            location.reload(); // Reload to display migrated items
+        }
+    }
+
+    // Initial Load
+    migrateData();
+    loadItems('learnItems', learnList, 'learn');
+    loadItems('planItems', planList, 'plan');
+    loadItems('repoItems', repoList, 'repo');
 }); 

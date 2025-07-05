@@ -69,6 +69,10 @@ h1 {
     background-color: #d4edda;
 }
 
+#calendar .absent {
+    background-color: #f8d7da;
+}
+
 .input-container {
     display: flex;
     flex-wrap: wrap;
