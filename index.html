@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Todo List</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Todo List</h1>
+
+        <div class="section">
+            <h2>Learn</h2>
+            <div class="input-container">
+                <input type="text" id="youtube-link" placeholder="Enter YouTube video link">
+                <button id="add-video-btn">Add Video</button>
+            </div>
+            <div id="video-list" class="item-list"></div>
+        </div>
+
+        <div class="section">
+            <h2>Implement</h2>
+            <div class="input-container">
+                <input type="text" id="repo-link" placeholder="Enter GitHub repo link">
+                <input type="text" id="repo-note" placeholder="Enter a note">
+                <button id="add-repo-btn">Add Repo</button>
+            </div>
+            <div id="repo-list" class="item-list"></div>
+        </div>
+
+    </div>
+    <script src="script.js"></script>
+</body>
+</html> 
