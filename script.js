@@ -346,34 +346,62 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Data Migration ---
     function migrateData() {
+        // Use a flag to ensure migration runs only once
+        if (localStorage.getItem('dataMigrationV2Completed')) {
+            return;
+        }
+    
+        let migrated = false;
         const oldVideos = JSON.parse(localStorage.getItem('videos'));
         const oldRepos = JSON.parse(localStorage.getItem('repos'));
-        let migrated = false;
-
-        if (oldVideos) {
-            const learnItems = oldVideos.map(videoId => ({
+    
+        // Migrate 'videos' to 'learnItems'
+        if (oldVideos && oldVideos.length > 0) {
+            const learnItems = JSON.parse(localStorage.getItem('learnItems')) || [];
+            const learnItemIds = new Set(learnItems.map(item => item.id));
+    
+            const migratedVideos = oldVideos.map(videoId => ({
                 link: `https://www.youtube.com/watch?v=${videoId}`,
                 note: 'Migrated from old version.',
-                id: Date.now().toString() + videoId,
+                id: `migrated-video-${videoId}`, // Use a stable, unique ID
                 timestamp: new Date().toLocaleString()
             }));
+    
+            migratedVideos.forEach(item => {
+                if (!learnItemIds.has(item.id)) {
+                    learnItems.push(item);
+                }
+            });
+    
             localStorage.setItem('learnItems', JSON.stringify(learnItems));
             localStorage.removeItem('videos');
             migrated = true;
         }
-
-        if (oldRepos) {
-            const repoItems = oldRepos.map(repo => ({
+    
+        // Migrate 'repos' to 'repoItems'
+        if (oldRepos && oldRepos.length > 0) {
+            const repoItems = JSON.parse(localStorage.getItem('repoItems')) || [];
+            const repoItemIds = new Set(repoItems.map(item => item.id));
+    
+            const migratedRepos = oldRepos.map(repo => ({
                 ...repo,
-                timestamp: new Date().toLocaleString()
+                timestamp: repo.timestamp || new Date().toLocaleString()
             }));
+    
+            migratedRepos.forEach(item => {
+                if (!repoItemIds.has(item.id)) {
+                    repoItems.push(item);
+                }
+            });
+    
             localStorage.setItem('repoItems', JSON.stringify(repoItems));
             localStorage.removeItem('repos');
             migrated = true;
         }
-
+    
         if (migrated) {
-            location.reload(); // Reload to display migrated items
+            localStorage.setItem('dataMigrationV2Completed', 'true');
+            location.reload();
         }
     }
 
