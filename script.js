@@ -1,8 +1,18 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // General elements
+    const dateTimeElement = document.getElementById('date-time');
+
     // Learn section elements
-    const addVideoBtn = document.getElementById('add-video-btn');
-    const youtubeLinkInput = document.getElementById('youtube-link');
-    const videoList = document.getElementById('video-list');
+    const addLearnBtn = document.getElementById('add-learn-btn');
+    const learnLinkInput = document.getElementById('learn-link');
+    const learnNoteInput = document.getElementById('learn-note');
+    const learnList = document.getElementById('learn-list');
+
+    // Plan section elements
+    const addPlanBtn = document.getElementById('add-plan-btn');
+    const planLinkInput = document.getElementById('plan-link');
+    const planNoteInput = document.getElementById('plan-note');
+    const planList = document.getElementById('plan-list');
 
     // Implement section elements
     const addRepoBtn = document.getElementById('add-repo-btn');
@@ -10,38 +20,161 @@ document.addEventListener('DOMContentLoaded', () => {
     const repoNoteInput = document.getElementById('repo-note');
     const repoList = document.getElementById('repo-list');
 
+    // Calendar elements
+    const calendarElement = document.getElementById('calendar');
+
+    // Whiteboard elements
+    const whiteboardCanvas = document.getElementById('whiteboard-canvas');
+    const whiteboardControls = document.getElementById('whiteboard-controls');
+    const clearBoardBtn = document.getElementById('clear-board-btn');
+    const eraserBtn = document.getElementById('eraser-btn');
+
     // Load saved data on page load
-    loadVideos();
-    loadRepos();
+    loadItems('learnItems', learnList, 'learn');
+    loadItems('planItems', planList, 'plan');
+    loadItems('repoItems', repoList, 'repo');
+    renderCalendar();
+    
+    // Whiteboard setup
+    resizeCanvas();
+    loadBoard();
+    window.addEventListener('resize', resizeCanvas);
 
-    // Event listeners for Learn section
-    addVideoBtn.addEventListener('click', addVideo);
-    youtubeLinkInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') addVideo();
-    });
+    // Drawing listeners
+    whiteboardCanvas.addEventListener('mousedown', startDrawing);
+    whiteboardCanvas.addEventListener('mouseup', stopDrawing);
+    whiteboardCanvas.addEventListener('mouseout', stopDrawing);
+    whiteboardCanvas.addEventListener('mousemove', draw);
+    
+    // Touch listeners
+    whiteboardCanvas.addEventListener('touchstart', startDrawing);
+    whiteboardCanvas.addEventListener('touchend', stopDrawing);
+    whiteboardCanvas.addEventListener('touchmove', draw);
 
-    // Event listeners for Implement section
-    addRepoBtn.addEventListener('click', addRepo);
-    repoLinkInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') addRepo();
-    });
-    repoNoteInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') addRepo();
-    });
+    // --- General Functions ---
+    function updateDateTime() {
+        dateTimeElement.textContent = new Date().toLocaleString();
+    }
+    setInterval(updateDateTime, 1000);
+    updateDateTime();
 
-    // --- Learn Section Functions ---
-    function addVideo() {
-        const link = youtubeLinkInput.value.trim();
-        if (link) {
-            const videoId = getYouTubeVideoId(link);
-            if (videoId) {
-                createVideoItem(videoId);
-                saveVideo(videoId);
-                youtubeLinkInput.value = '';
+    // --- Event Listeners ---
+    addLearnBtn.addEventListener('click', () => addItem('learn'));
+    addPlanBtn.addEventListener('click', () => addItem('plan'));
+    addRepoBtn.addEventListener('click', () => addItem('repo'));
+
+    // --- Universal Item Functions ---
+    function addItem(type) {
+        let link, note, list, storageKey, item;
+        const now = new Date();
+        const timestamp = now.toLocaleString();
+
+        switch (type) {
+            case 'learn':
+                link = learnLinkInput.value.trim();
+                note = learnNoteInput.value.trim();
+                list = learnList;
+                storageKey = 'learnItems';
+                if (!link && !note) {
+                    alert('Please enter a link or a note.');
+                    return;
+                }
+                item = { link, note, id: Date.now().toString(), timestamp };
+                learnLinkInput.value = '';
+                learnNoteInput.value = '';
+                break;
+            case 'plan':
+                link = planLinkInput.value.trim();
+                note = planNoteInput.value.trim();
+                list = planList;
+                storageKey = 'planItems';
+                if (!link && !note) {
+                    alert('Please enter a link or a note.');
+                    return;
+                }
+                item = { link, note, id: Date.now().toString(), timestamp };
+                planLinkInput.value = '';
+                planNoteInput.value = '';
+                break;
+            case 'repo':
+                link = repoLinkInput.value.trim();
+                note = repoNoteInput.value.trim();
+                list = repoList;
+                storageKey = 'repoItems';
+                if (!link && !note) {
+                    alert('Please enter a repo link or a note.');
+                    return;
+                }
+                item = { link, note, id: Date.now().toString(), timestamp };
+                repoLinkInput.value = '';
+                repoNoteInput.value = '';
+                break;
+        }
+
+        createItemElement(item, list, storageKey, type);
+        saveItem(item, storageKey);
+    }
+
+    function createItemElement(item, list, storageKey, type) {
+        const itemElement = document.createElement('div');
+        itemElement.className = 'item';
+        itemElement.dataset.id = item.id;
+
+        const timestampElement = document.createElement('div');
+        timestampElement.className = 'timestamp';
+        timestampElement.textContent = item.timestamp;
+        itemElement.appendChild(timestampElement);
+
+        if (item.link) {
+            const videoId = getYouTubeVideoId(item.link);
+            if (videoId && (type === 'learn' || type === 'plan')) {
+                const iframe = document.createElement('iframe');
+                iframe.src = `https://www.youtube.com/embed/${videoId}`;
+                iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
+                iframe.allowFullscreen = true;
+                itemElement.appendChild(iframe);
             } else {
-                alert('Please enter a valid YouTube video link.');
+                const linkElement = document.createElement('a');
+                linkElement.href = item.link;
+                linkElement.textContent = item.link;
+                linkElement.target = '_blank';
+                itemElement.appendChild(linkElement);
             }
         }
+
+        if (item.note) {
+            const noteElement = document.createElement('p');
+            noteElement.textContent = item.note;
+            itemElement.appendChild(noteElement);
+        }
+
+        const removeButton = document.createElement('button');
+        removeButton.textContent = 'Remove';
+        removeButton.className = 'remove-btn';
+        removeButton.addEventListener('click', () => {
+            list.removeChild(itemElement);
+            removeItem(item.id, storageKey);
+        });
+
+        itemElement.appendChild(removeButton);
+        list.appendChild(itemElement);
+    }
+
+    function saveItem(item, storageKey) {
+        let items = JSON.parse(localStorage.getItem(storageKey)) || [];
+        items.push(item);
+        localStorage.setItem(storageKey, JSON.stringify(items));
+    }
+
+    function removeItem(id, storageKey) {
+        let items = JSON.parse(localStorage.getItem(storageKey)) || [];
+        items = items.filter(item => item.id !== id);
+        localStorage.setItem(storageKey, JSON.stringify(items));
+    }
+
+    function loadItems(storageKey, list, type) {
+        const items = JSON.parse(localStorage.getItem(storageKey)) || [];
+        items.forEach(item => createItemElement(item, list, storageKey, type));
     }
 
     function getYouTubeVideoId(url) {
@@ -50,104 +183,145 @@ document.addEventListener('DOMContentLoaded', () => {
         return (match && match[2].length === 11) ? match[2] : null;
     }
 
-    function createVideoItem(videoId) {
-        const videoItem = document.createElement('div');
-        videoItem.className = 'video-item';
+    // --- Whiteboard Functions ---
+    const ctx = whiteboardCanvas.getContext('2d');
+    let isDrawing = false;
+    let penColor = 'black';
+    let penSize = 3;
 
-        const iframe = document.createElement('iframe');
-        iframe.src = `https://www.youtube.com/embed/${videoId}`;
-        iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
-        iframe.allowFullscreen = true;
+    function resizeCanvas() {
+        const imageData = getCanvasImage();
+        const container = whiteboardCanvas.parentElement;
+        whiteboardCanvas.width = container.clientWidth;
+        whiteboardCanvas.height = 500; // Fixed height
+        if (imageData) {
+            putCanvasImage(imageData);
+        }
+    }
+
+    function startDrawing(e) {
+        isDrawing = true;
+        draw(e);
+    }
+
+    function stopDrawing() {
+        isDrawing = false;
+        ctx.beginPath();
+        saveBoard();
+    }
+
+    function draw(e) {
+        if (!isDrawing) return;
         
-        const removeButton = document.createElement('button');
-        removeButton.textContent = 'Remove';
-        removeButton.className = 'remove-btn';
+        e.preventDefault();
+        const rect = whiteboardCanvas.getBoundingClientRect();
+        const x = (e.clientX || e.touches[0].clientX) - rect.left;
+        const y = (e.clientY || e.touches[0].clientY) - rect.top;
 
-        removeButton.addEventListener('click', () => {
-            videoList.removeChild(videoItem);
-            removeVideo(videoId);
-        });
+        ctx.lineWidth = penSize;
+        ctx.lineCap = 'round';
+        ctx.strokeStyle = penColor;
 
-        videoItem.appendChild(iframe);
-        videoItem.appendChild(removeButton);
-        videoList.appendChild(videoItem);
+        ctx.lineTo(x, y);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(x, y);
     }
 
-    function saveVideo(videoId) {
-        let videos = JSON.parse(localStorage.getItem('videos')) || [];
-        if (!videos.includes(videoId)) {
-            videos.push(videoId);
-            localStorage.setItem('videos', JSON.stringify(videos));
+    function saveBoard() {
+        localStorage.setItem('whiteboard', whiteboardCanvas.toDataURL());
+    }
+
+    function loadBoard() {
+        const dataURL = localStorage.getItem('whiteboard');
+        if (dataURL) {
+           putCanvasImage(dataURL);
+        }
+    }
+    
+    function getCanvasImage() {
+        if (isCanvasBlank(whiteboardCanvas)) return null;
+        return whiteboardCanvas.toDataURL();
+    }
+
+    function putCanvasImage(dataURL) {
+        const img = new Image();
+        img.src = dataURL;
+        img.onload = () => {
+            ctx.clearRect(0, 0, whiteboardCanvas.width, whiteboardCanvas.height);
+            ctx.drawImage(img, 0, 0);
         }
     }
 
-    function removeVideo(videoId) {
-        let videos = JSON.parse(localStorage.getItem('videos')) || [];
-        videos = videos.filter(id => id !== videoId);
-        localStorage.setItem('videos', JSON.stringify(videos));
+    function isCanvasBlank(canvas) {
+        const blank = document.createElement('canvas');
+        blank.width = canvas.width;
+        blank.height = canvas.height;
+        return canvas.toDataURL() === blank.toDataURL();
     }
 
-    function loadVideos() {
-        const videos = JSON.parse(localStorage.getItem('videos')) || [];
-        videos.forEach(videoId => createVideoItem(videoId));
-    }
+    whiteboardControls.addEventListener('click', (e) => {
+        const target = e.target.closest('button');
+        if (!target) return;
 
-    // --- Implement Section Functions ---
-    function addRepo() {
-        const link = repoLinkInput.value.trim();
-        const note = repoNoteInput.value.trim();
-        if (link && note) {
-            const repo = { link, note, id: Date.now().toString() };
-            createRepoItem(repo);
-            saveRepo(repo);
-            repoLinkInput.value = '';
-            repoNoteInput.value = '';
-        } else {
-            alert('Please enter both a repo link and a note.');
+        const allButtons = whiteboardControls.querySelectorAll('button');
+        allButtons.forEach(btn => btn.classList.remove('active'));
+        target.classList.add('active');
+
+        if (target.dataset.color) {
+            penColor = target.dataset.color;
+            penSize = 3;
+            ctx.globalCompositeOperation = 'source-over';
+        } else if (target.id === 'eraser-btn') {
+            penColor = '#FFFFFF';
+            penSize = 20;
+            ctx.globalCompositeOperation = 'destination-out';
         }
-    }
+    });
 
-    function createRepoItem(repo) {
-        const repoItem = document.createElement('div');
-        repoItem.className = 'repo-item';
+    clearBoardBtn.addEventListener('click', () => {
+        ctx.clearRect(0, 0, whiteboardCanvas.width, whiteboardCanvas.height);
+        saveBoard();
+    });
 
-        const link = document.createElement('a');
-        link.href = repo.link;
-        link.textContent = repo.link;
-        link.target = '_blank';
+    // --- Calendar Functions ---
+    function renderCalendar() {
+        const today = new Date();
+        const month = today.getMonth();
+        const year = today.getFullYear();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const firstDayOfMonth = new Date(year, month, 1).getDay();
 
-        const note = document.createElement('p');
-        note.textContent = repo.note;
+        let calendarHtml = '<table><thead><tr><th>Sun</th><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th></tr></thead><tbody><tr>';
 
-        const removeButton = document.createElement('button');
-        removeButton.textContent = 'Remove';
-        removeButton.className = 'remove-btn';
+        for (let i = 0; i < firstDayOfMonth; i++) {
+            calendarHtml += '<td></td>';
+        }
 
-        removeButton.addEventListener('click', () => {
-            repoList.removeChild(repoItem);
-            removeRepo(repo.id);
+        let attendance = JSON.parse(localStorage.getItem('attendance')) || {};
+
+        for (let day = 1; day <= daysInMonth; day++) {
+            const dateStr = `${year}-${month + 1}-${day}`;
+            const isPresent = attendance[dateStr];
+            const isToday = day === today.getDate();
+            
+            calendarHtml += `<td class="${isToday ? 'today' : ''} ${isPresent ? 'present' : ''}" data-date="${dateStr}">${day}</td>`;
+            if ((firstDayOfMonth + day) % 7 === 0) {
+                calendarHtml += '</tr><tr>';
+            }
+        }
+        
+        calendarHtml += '</tr></tbody></table>';
+        calendarElement.innerHTML = calendarHtml;
+
+        calendarElement.querySelectorAll('td[data-date]').forEach(cell => {
+            cell.addEventListener('click', (e) => {
+                const dateStr = e.target.dataset.date;
+                let attendance = JSON.parse(localStorage.getItem('attendance')) || {};
+                attendance[dateStr] = !attendance[dateStr];
+                localStorage.setItem('attendance', JSON.stringify(attendance));
+                renderCalendar(); 
+            });
         });
-
-        repoItem.appendChild(link);
-        repoItem.appendChild(note);
-        repoItem.appendChild(removeButton);
-        repoList.appendChild(repoItem);
-    }
-
-    function saveRepo(repo) {
-        let repos = JSON.parse(localStorage.getItem('repos')) || [];
-        repos.push(repo);
-        localStorage.setItem('repos', JSON.stringify(repos));
-    }
-
-    function removeRepo(repoId) {
-        let repos = JSON.parse(localStorage.getItem('repos')) || [];
-        repos = repos.filter(repo => repo.id !== repoId);
-        localStorage.setItem('repos', JSON.stringify(repos));
-    }
-
-    function loadRepos() {
-        const repos = JSON.parse(localStorage.getItem('repos')) || [];
-        repos.forEach(repo => createRepoItem(repo));
     }
 }); 
