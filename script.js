@@ -30,7 +30,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const eraserBtn = document.getElementById('eraser-btn');
 
     // Load saved data on page load
-    migrateData();
     loadItems('learnItems', learnList, 'learn');
     loadItems('planItems', planList, 'plan');
     loadItems('repoItems', repoList, 'repo');
@@ -344,70 +343,9 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- Data Migration ---
-    function migrateData() {
-        // Use a flag to ensure migration runs only once
-        if (localStorage.getItem('dataMigrationV2Completed')) {
-            return;
-        }
-    
-        let migrated = false;
-        const oldVideos = JSON.parse(localStorage.getItem('videos'));
-        const oldRepos = JSON.parse(localStorage.getItem('repos'));
-    
-        // Migrate 'videos' to 'learnItems'
-        if (oldVideos && oldVideos.length > 0) {
-            const learnItems = JSON.parse(localStorage.getItem('learnItems')) || [];
-            const learnItemIds = new Set(learnItems.map(item => item.id));
-    
-            const migratedVideos = oldVideos.map(videoId => ({
-                link: `https://www.youtube.com/watch?v=${videoId}`,
-                note: 'Migrated from old version.',
-                id: `migrated-video-${videoId}`, // Use a stable, unique ID
-                timestamp: new Date().toLocaleString()
-            }));
-    
-            migratedVideos.forEach(item => {
-                if (!learnItemIds.has(item.id)) {
-                    learnItems.push(item);
-                }
-            });
-    
-            localStorage.setItem('learnItems', JSON.stringify(learnItems));
-            localStorage.removeItem('videos');
-            migrated = true;
-        }
-    
-        // Migrate 'repos' to 'repoItems'
-        if (oldRepos && oldRepos.length > 0) {
-            const repoItems = JSON.parse(localStorage.getItem('repoItems')) || [];
-            const repoItemIds = new Set(repoItems.map(item => item.id));
-    
-            const migratedRepos = oldRepos.map(repo => ({
-                ...repo,
-                timestamp: repo.timestamp || new Date().toLocaleString()
-            }));
-    
-            migratedRepos.forEach(item => {
-                if (!repoItemIds.has(item.id)) {
-                    repoItems.push(item);
-                }
-            });
-    
-            localStorage.setItem('repoItems', JSON.stringify(repoItems));
-            localStorage.removeItem('repos');
-            migrated = true;
-        }
-    
-        if (migrated) {
-            localStorage.setItem('dataMigrationV2Completed', 'true');
-            location.reload();
-        }
-    }
-
     // Initial Load
-    migrateData();
     loadItems('learnItems', learnList, 'learn');
     loadItems('planItems', planList, 'plan');
     loadItems('repoItems', repoList, 'repo');
+    renderCalendar();
 }); 
