@@ -58,24 +58,41 @@ h1 {
 
 #calendar td {
     cursor: pointer;
+    position: relative;
 }
 
 #calendar .today {
     background-color: #e0f3ff;
     font-weight: bold;
-    border-radius: 50%;
+    border-radius: 8px;
 }
 
 #calendar .present {
-    background-color: #cce7d4;
-    color: #155724;
-    border-radius: 50%;
+    font-weight: 600;
+}
+
+#calendar .present::after {
+    content: '✔';
+    color: #28a745;
+    position: absolute;
+    top: 50%;
+    right: 8px;
+    transform: translateY(-50%);
+    font-size: 1.4em;
 }
 
 #calendar .absent {
-    background-color: #f8d7da;
-    color: #721c24;
-    border-radius: 50%;
+    font-weight: 600;
+}
+
+#calendar .absent::after {
+    content: '✖';
+    color: #dc3545;
+    position: absolute;
+    top: 50%;
+    right: 8px;
+    transform: translateY(-50%);
+    font-size: 1.4em;
 }
 
 .input-container {
