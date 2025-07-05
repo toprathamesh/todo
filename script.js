@@ -51,6 +51,35 @@ document.addEventListener('DOMContentLoaded', () => {
     whiteboardCanvas.addEventListener('touchend', stopDrawing);
     whiteboardCanvas.addEventListener('touchmove', draw);
 
+    // --- Data Cleanup ---
+    function deduplicateStorage() {
+        if (localStorage.getItem('storageCleanedV1')) {
+            return;
+        }
+
+        const keys = ['learnItems', 'planItems', 'repoItems'];
+        keys.forEach(key => {
+            const items = JSON.parse(localStorage.getItem(key)) || [];
+            if (items.length === 0) return;
+
+            const uniqueItems = [];
+            const seen = new Set();
+
+            items.forEach(item => {
+                // Create a unique key for each item based on its content
+                const itemKey = `${item.link}|${item.note}`;
+                if (!seen.has(itemKey)) {
+                    uniqueItems.push(item);
+                    seen.add(itemKey);
+                }
+            });
+
+            localStorage.setItem(key, JSON.stringify(uniqueItems));
+        });
+
+        localStorage.setItem('storageCleanedV1', 'true');
+    }
+
     // --- General Functions ---
     function updateDateTime() {
         dateTimeElement.textContent = new Date().toLocaleString();
@@ -344,6 +373,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Initial Load
+    deduplicateStorage();
     loadItems('learnItems', learnList, 'learn');
     loadItems('planItems', planList, 'plan');
     loadItems('repoItems', repoList, 'repo');
