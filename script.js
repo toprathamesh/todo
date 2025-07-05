@@ -30,9 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const eraserBtn = document.getElementById('eraser-btn');
 
     // Load saved data on page load
-    loadItems('learnItems', learnList, 'learn');
-    loadItems('planItems', planList, 'plan');
-    loadItems('repoItems', repoList, 'repo');
+    cleanAndLoadData();
     renderCalendar();
     
     // Whiteboard setup
@@ -51,33 +49,45 @@ document.addEventListener('DOMContentLoaded', () => {
     whiteboardCanvas.addEventListener('touchend', stopDrawing);
     whiteboardCanvas.addEventListener('touchmove', draw);
 
-    // --- Data Cleanup ---
-    function deduplicateStorage() {
-        if (localStorage.getItem('storageCleanedV1')) {
-            return;
-        }
-
+    // --- Data Loading and Cleanup ---
+    function cleanAndLoadData() {
         const keys = ['learnItems', 'planItems', 'repoItems'];
         keys.forEach(key => {
             const items = JSON.parse(localStorage.getItem(key)) || [];
             if (items.length === 0) return;
-
+    
             const uniqueItems = [];
             const seen = new Set();
-
-            items.forEach(item => {
-                // Create a unique key for each item based on its content
+    
+            // Iterate backwards to keep the most recent item in case of duplication
+            for (let i = items.length - 1; i >= 0; i--) {
+                const item = items[i];
+                // Skip any malformed entries
+                if (!item || typeof item.link === 'undefined' || typeof item.note === 'undefined') continue;
+                
                 const itemKey = `${item.link}|${item.note}`;
                 if (!seen.has(itemKey)) {
-                    uniqueItems.push(item);
+                    uniqueItems.unshift(item); // Add to front to maintain original order
                     seen.add(itemKey);
                 }
-            });
-
-            localStorage.setItem(key, JSON.stringify(uniqueItems));
+            }
+    
+            // If duplicates were found, update localStorage with the clean list
+            if (items.length !== uniqueItems.length) {
+                localStorage.setItem(key, JSON.stringify(uniqueItems));
+            }
+    
+            // Load the cleaned items into the DOM
+            const listElement = getListElementByKey(key);
+            uniqueItems.forEach(item => createItemElement(item, listElement, key, key.replace('Items', '')));
         });
-
-        localStorage.setItem('storageCleanedV1', 'true');
+    }
+    
+    function getListElementByKey(key) {
+        if (key === 'learnItems') return learnList;
+        if (key === 'planItems') return planList;
+        if (key === 'repoItems') return repoList;
+        return null;
     }
 
     // --- General Functions ---
@@ -199,11 +209,6 @@ document.addEventListener('DOMContentLoaded', () => {
         let items = JSON.parse(localStorage.getItem(storageKey)) || [];
         items = items.filter(item => item.id !== id);
         localStorage.setItem(storageKey, JSON.stringify(items));
-    }
-
-    function loadItems(storageKey, list, type) {
-        const items = JSON.parse(localStorage.getItem(storageKey)) || [];
-        items.forEach(item => createItemElement(item, list, storageKey, type));
     }
 
     function getYouTubeVideoId(url) {
@@ -373,9 +378,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Initial Load
-    deduplicateStorage();
-    loadItems('learnItems', learnList, 'learn');
-    loadItems('planItems', planList, 'plan');
-    loadItems('repoItems', repoList, 'repo');
+    cleanAndLoadData();
     renderCalendar();
 }); 
