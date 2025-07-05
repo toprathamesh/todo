@@ -79,7 +79,10 @@ document.addEventListener('DOMContentLoaded', () => {
     
             // Load the cleaned items into the DOM
             const listElement = getListElementByKey(key);
-            uniqueItems.forEach(item => createItemElement(item, listElement, key, key.replace('Items', '')));
+            if (listElement) {
+                listElement.innerHTML = ''; // Clear the list before rendering
+                uniqueItems.forEach(item => createItemElement(item, listElement, key, key.replace('Items', '')));
+            }
         });
     }
     
