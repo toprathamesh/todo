@@ -457,7 +457,6 @@ document.addEventListener('DOMContentLoaded', () => {
     function closeNoteModal() {
         noteModal.style.display = 'none';
         currentNoteDate = null;
-        renderCalendar();
     }
 
     function saveNote() {
@@ -482,6 +481,7 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('calendarBusyDates', JSON.stringify(busyDates));
 
         closeNoteModal();
+        renderCalendar();
     }
 
     function toggleAttendance(dateStr) {
