@@ -442,7 +442,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const note = notes[dateStr] || '';
         const isBusy = busyDates[dateStr] || false;
 
-        const formattedDate = new Date(dateStr).toLocaleDateString('en-US', {
+        const parts = dateStr.split('-').map(p => parseInt(p, 10));
+        const year = parts[0];
+        const month = parts[1] - 1; // Adjust for 0-based month
+        const day = parts[2];
+        const modalDate = new Date(year, month, day);
+
+        const formattedDate = modalDate.toLocaleDateString('en-US', {
             year: 'numeric',
             month: 'long',
             day: 'numeric'
