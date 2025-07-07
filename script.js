@@ -490,19 +490,10 @@ document.addEventListener('DOMContentLoaded', () => {
     function toggleAttendance(dateStr) {
         if (!dateStr) return;
 
-                const cellDate = new Date(dateStr);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-                
-                if (cellDate > today) {
-                    alert("You cannot mark future dates.");
-            return;
-                }
-
-                let attendance = JSON.parse(localStorage.getItem('attendance')) || {};
-                attendance[dateStr] = !attendance[dateStr];
-                localStorage.setItem('attendance', JSON.stringify(attendance));
-                renderCalendar(); 
+        let attendance = JSON.parse(localStorage.getItem('attendance')) || {};
+        attendance[dateStr] = !attendance[dateStr];
+        localStorage.setItem('attendance', JSON.stringify(attendance));
+        renderCalendar();
     }
 
     closeBtn.addEventListener('click', closeNoteModal);
