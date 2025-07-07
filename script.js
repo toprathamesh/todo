@@ -335,12 +335,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Calendar Functions ---
     function setupCalendarNavigation() {
         document.getElementById('prev-month-btn').addEventListener('click', () => {
-            displayedDate.setMonth(displayedDate.getMonth() - 1);
+            displayedDate.setMonth(displayedDate.getMonth() - 1, 1);
             renderCalendar();
         });
 
         document.getElementById('next-month-btn').addEventListener('click', () => {
-            displayedDate.setMonth(displayedDate.getMonth() + 1);
+            displayedDate.setMonth(displayedDate.getMonth() + 1, 1);
             renderCalendar();
         });
     }
@@ -457,8 +457,6 @@ document.addEventListener('DOMContentLoaded', () => {
     function closeNoteModal() {
         noteModal.style.display = 'none';
         currentNoteDate = null;
-        localStorage.setItem('calendarNotes', JSON.stringify(notes));
-        localStorage.setItem('calendarBusyDates', JSON.stringify(busyDates));
         renderCalendar();
     }
 
@@ -484,7 +482,6 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('calendarBusyDates', JSON.stringify(busyDates));
 
         closeNoteModal();
-        renderCalendar();
     }
 
     function toggleAttendance(dateStr) {
