@@ -471,26 +471,34 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- PDF Download Function ---
     function downloadCalendarAsPDF() {
         const { jsPDF } = window.jspdf;
-        const calendarContent = document.getElementById('calendar');
+        const calendarElement = document.getElementById('calendar');
+        const calendarContainer = document.querySelector('.calendar-container');
         const notes = JSON.parse(localStorage.getItem('calendarNotes')) || {};
 
+        // Add a class for print-specific styles
+        calendarContainer.classList.add('printing-pdf');
+
         // Temporarily add notes to the calendar for printing
-        const cellsWithNotes = calendarContent.querySelectorAll('.note-indicator');
-        cellsWithNotes.forEach(indicator => {
-            const cell = indicator.parentElement;
+        const calendarCells = calendarElement.querySelectorAll('td[data-date]');
+        
+        calendarCells.forEach(cell => {
             const dateStr = cell.dataset.date;
             if (notes[dateStr]) {
                 const noteElement = document.createElement('div');
                 noteElement.className = 'note-for-pdf';
                 noteElement.textContent = notes[dateStr];
                 cell.appendChild(noteElement);
-                indicator.style.display = 'none';
+
+                const indicator = cell.querySelector('.note-indicator');
+                if (indicator) {
+                    indicator.style.display = 'none';
+                }
             }
         });
 
-        html2canvas(calendarContent, {
+        html2canvas(calendarElement, {
             scale: 2, // Higher scale for better quality
-            useCORS: true 
+            useCORS: true
         }).then(canvas => {
             const imgData = canvas.toDataURL('image/png');
             const pdf = new jsPDF({
@@ -500,11 +508,12 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
-            pdf.save('calendar.pdf');
+            pdf.save('calendar_with_notes.pdf');
         }).finally(() => {
-            // Clean up the added notes
-            calendarContent.querySelectorAll('.note-for-pdf').forEach(el => el.remove());
-            cellsWithNotes.forEach(indicator => {
+            // Clean up: remove the class and the added notes
+            calendarContainer.classList.remove('printing-pdf');
+            calendarElement.querySelectorAll('.note-for-pdf').forEach(el => el.remove());
+            calendarElement.querySelectorAll('.note-indicator').forEach(indicator => {
                 indicator.style.display = '';
             });
         });

@@ -358,4 +358,31 @@ h2 {
 
 #download-pdf-btn:hover {
     background-color: #2980b9;
+}
+
+/* Styles for PDF Printing */
+.printing-pdf #calendar {
+    font-size: 10px;
+}
+
+.printing-pdf #calendar td {
+    height: auto;
+    min-height: 80px;
+    vertical-align: top;
+    padding: 5px;
+    text-align: left;
+}
+
+.printing-pdf #calendar .note-for-pdf {
+    font-size: 9px;
+    color: #333;
+    white-space: pre-wrap;
+    word-break: break-word;
+    margin-top: 5px;
+}
+
+.printing-pdf #calendar .present::after,
+.printing-pdf #calendar .absent::after {
+    top: 8px;
+    right: 5px;
 } 
