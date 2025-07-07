@@ -102,9 +102,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- General Functions ---
     function updateDateTime() {
         const now = new Date();
-        const dateOptions = { day: 'numeric', month: 'long', year: 'numeric' };
+        const day = now.getDate();
+        const month = now.getMonth() + 1;
+        const year = now.getFullYear();
         const timeOptions = { hour: 'numeric', minute: 'numeric', second: 'numeric' };
-        dateTimeElement.textContent = `${now.toLocaleDateString('en-GB', dateOptions)} ${now.toLocaleTimeString('en-US', timeOptions)}`;
+        dateTimeElement.textContent = `${day} / ${month} / ${year} ${now.toLocaleTimeString('en-US', timeOptions)}`;
     }
     setInterval(updateDateTime, 1000);
     updateDateTime();
@@ -118,9 +120,11 @@ document.addEventListener('DOMContentLoaded', () => {
     function addItem(type) {
         let link, note, list, storageKey, item;
         const now = new Date();
-        const dateOptions = { day: 'numeric', month: 'long', year: 'numeric' };
+        const day = now.getDate();
+        const month = now.getMonth() + 1;
+        const year = now.getFullYear();
         const timeOptions = { hour: 'numeric', minute: 'numeric', second: 'numeric' };
-        const timestamp = `${now.toLocaleDateString('en-GB', dateOptions)} ${now.toLocaleTimeString('en-US', timeOptions)}`;
+        const timestamp = `${day} / ${month} / ${year} ${now.toLocaleTimeString('en-US', timeOptions)}`;
 
         switch (type) {
             case 'learn':
@@ -448,11 +452,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const day = parts[2];
         const modalDate = new Date(year, month, day);
 
-        const formattedDate = modalDate.toLocaleDateString('en-GB', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-        });
+        const formattedDate = `${day} / ${month + 1} / ${year}`;
 
         modalTitle.textContent = `Note for ${formattedDate}`;
         noteInput.value = note;
