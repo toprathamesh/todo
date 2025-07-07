@@ -29,7 +29,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const noteInput = document.getElementById('note-input');
     const saveNoteBtn = document.getElementById('save-note-btn');
     const closeBtn = document.querySelector('.close-btn');
-    const markAttendanceBtn = document.getElementById('mark-attendance-btn');
     let currentNoteDate = null;
 
     // Whiteboard elements
@@ -393,6 +392,10 @@ document.addEventListener('DOMContentLoaded', () => {
         calendarElement.querySelectorAll('td[data-date]').forEach(cell => {
             cell.addEventListener('click', (e) => {
                 const dateStr = e.target.closest('td').dataset.date;
+                toggleAttendance(dateStr);
+            });
+            cell.addEventListener('dblclick', (e) => {
+                const dateStr = e.target.closest('td').dataset.date;
                 openNoteModal(dateStr);
             });
         });
@@ -403,12 +406,6 @@ document.addEventListener('DOMContentLoaded', () => {
         currentNoteDate = dateStr;
         const notes = JSON.parse(localStorage.getItem('calendarNotes')) || {};
         const note = notes[dateStr] || '';
-        const attendance = JSON.parse(localStorage.getItem('attendance')) || {};
-        const isPresent = attendance[dateStr];
-        const cellDate = new Date(dateStr);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
         const formattedDate = new Date(dateStr).toLocaleDateString('en-US', {
             year: 'numeric',
             month: 'long',
@@ -418,19 +415,14 @@ document.addEventListener('DOMContentLoaded', () => {
         modalTitle.textContent = `Note for ${formattedDate}`;
         noteInput.value = note;
         noteModal.style.display = 'flex';
-
-        if (cellDate > today) {
-            markAttendanceBtn.disabled = true;
-            markAttendanceBtn.textContent = 'Cannot Mark Future Date';
-        } else {
-            markAttendanceBtn.disabled = false;
-            markAttendanceBtn.textContent = isPresent ? 'Mark as Absent' : 'Mark as Present';
-        }
     }
 
     function closeNoteModal() {
         noteModal.style.display = 'none';
         currentNoteDate = null;
+        localStorage.setItem('calendarNotes', JSON.stringify(notes));
+        closeNoteModal();
+        renderCalendar();
     }
 
     function saveNote() {
@@ -450,10 +442,10 @@ document.addEventListener('DOMContentLoaded', () => {
         renderCalendar();
     }
 
-    function toggleAttendance() {
-        if (!currentNoteDate) return;
+    function toggleAttendance(dateStr) {
+        if (!dateStr) return;
 
-        const cellDate = new Date(currentNoteDate);
+        const cellDate = new Date(dateStr);
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
@@ -463,18 +455,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         let attendance = JSON.parse(localStorage.getItem('attendance')) || {};
-        attendance[currentNoteDate] = !attendance[currentNoteDate];
+        attendance[dateStr] = !attendance[dateStr];
         localStorage.setItem('attendance', JSON.stringify(attendance));
-        
-        const isPresent = attendance[currentNoteDate];
-        markAttendanceBtn.textContent = isPresent ? 'Mark as Absent' : 'Mark as Present';
-
         renderCalendar();
     }
 
     closeBtn.addEventListener('click', closeNoteModal);
     saveNoteBtn.addEventListener('click', saveNote);
-    markAttendanceBtn.addEventListener('click', toggleAttendance);
     window.addEventListener('click', (e) => {
         if (e.target === noteModal) {
             closeNoteModal();
