@@ -23,6 +23,15 @@ document.addEventListener('DOMContentLoaded', () => {
     // Calendar elements
     const calendarElement = document.getElementById('calendar');
 
+    // Note Modal elements
+    const noteModal = document.getElementById('note-modal');
+    const modalTitle = document.getElementById('modal-title');
+    const noteInput = document.getElementById('note-input');
+    const saveNoteBtn = document.getElementById('save-note-btn');
+    const closeBtn = document.querySelector('.close-btn');
+    const markAttendanceBtn = document.getElementById('mark-attendance-btn');
+    let currentNoteDate = null;
+
     // Whiteboard elements
     const whiteboardCanvas = document.getElementById('whiteboard-canvas');
     const whiteboardControls = document.getElementById('whiteboard-controls');
@@ -337,6 +346,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         let attendance = JSON.parse(localStorage.getItem('attendance')) || {};
+        let notes = JSON.parse(localStorage.getItem('calendarNotes')) || {};
 
         for (let day = 1; day <= daysInMonth; day++) {
             const dateStr = `${year}-${month + 1}-${day}`;
@@ -344,6 +354,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const isPresent = attendance[dateStr];
             const isToday = day === today.getDate() && month === today.getMonth() && year === today.getFullYear();
             const isPast = cellDate < today;
+            const note = notes[dateStr];
 
             let cellClass = '';
             if (isToday) cellClass += 'today ';
@@ -353,7 +364,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 cellClass += 'absent';
             }
             
-            calendarHtml += `<td class="${cellClass}" data-date="${dateStr}">${day}</td>`;
+            calendarHtml += `<td class="${cellClass}" data-date="${dateStr}">${day}`;
+            if (note) {
+                calendarHtml += `<div class="note-indicator" title="${note}"></div>`;
+            }
+            calendarHtml += `</td>`;
+
             if ((firstDayOfMonth + day) % 7 === 0) {
                 calendarHtml += '</tr><tr>';
             }
@@ -362,20 +378,147 @@ document.addEventListener('DOMContentLoaded', () => {
         calendarHtml += '</tr></tbody></table>';
         calendarElement.innerHTML = calendarHtml;
 
+        const calendarContainerHeader = document.querySelector('.calendar-container h2');
+        if (calendarContainerHeader) {
+            let downloadBtn = document.getElementById('download-pdf-btn');
+            if (!downloadBtn) {
+                downloadBtn = document.createElement('button');
+                downloadBtn.id = 'download-pdf-btn';
+                downloadBtn.textContent = 'Download PDF';
+                calendarContainerHeader.appendChild(downloadBtn);
+                downloadBtn.addEventListener('click', downloadCalendarAsPDF);
+            }
+        }
+
         calendarElement.querySelectorAll('td[data-date]').forEach(cell => {
             cell.addEventListener('click', (e) => {
-                const dateStr = e.target.dataset.date;
-                const cellDate = new Date(dateStr);
-                
-                if (cellDate > today) {
-                    alert("You cannot mark future dates.");
-                    return; // Don't allow clicking future dates
-                }
+                const dateStr = e.target.closest('td').dataset.date;
+                openNoteModal(dateStr);
+            });
+        });
+    }
 
-                let attendance = JSON.parse(localStorage.getItem('attendance')) || {};
-                attendance[dateStr] = !attendance[dateStr];
-                localStorage.setItem('attendance', JSON.stringify(attendance));
-                renderCalendar(); 
+    // --- Note Modal Functions ---
+    function openNoteModal(dateStr) {
+        currentNoteDate = dateStr;
+        const notes = JSON.parse(localStorage.getItem('calendarNotes')) || {};
+        const note = notes[dateStr] || '';
+        const attendance = JSON.parse(localStorage.getItem('attendance')) || {};
+        const isPresent = attendance[dateStr];
+        const cellDate = new Date(dateStr);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const formattedDate = new Date(dateStr).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+
+        modalTitle.textContent = `Note for ${formattedDate}`;
+        noteInput.value = note;
+        noteModal.style.display = 'flex';
+
+        if (cellDate > today) {
+            markAttendanceBtn.disabled = true;
+            markAttendanceBtn.textContent = 'Cannot Mark Future Date';
+        } else {
+            markAttendanceBtn.disabled = false;
+            markAttendanceBtn.textContent = isPresent ? 'Mark as Absent' : 'Mark as Present';
+        }
+    }
+
+    function closeNoteModal() {
+        noteModal.style.display = 'none';
+        currentNoteDate = null;
+    }
+
+    function saveNote() {
+        if (!currentNoteDate) return;
+
+        const notes = JSON.parse(localStorage.getItem('calendarNotes')) || {};
+        const noteText = noteInput.value.trim();
+
+        if (noteText) {
+            notes[currentNoteDate] = noteText;
+        } else {
+            delete notes[currentNoteDate];
+        }
+
+        localStorage.setItem('calendarNotes', JSON.stringify(notes));
+        closeNoteModal();
+        renderCalendar();
+    }
+
+    function toggleAttendance() {
+        if (!currentNoteDate) return;
+
+        const cellDate = new Date(currentNoteDate);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        if (cellDate > today) {
+            alert("You cannot mark future dates.");
+            return;
+        }
+
+        let attendance = JSON.parse(localStorage.getItem('attendance')) || {};
+        attendance[currentNoteDate] = !attendance[currentNoteDate];
+        localStorage.setItem('attendance', JSON.stringify(attendance));
+        
+        const isPresent = attendance[currentNoteDate];
+        markAttendanceBtn.textContent = isPresent ? 'Mark as Absent' : 'Mark as Present';
+
+        renderCalendar();
+    }
+
+    closeBtn.addEventListener('click', closeNoteModal);
+    saveNoteBtn.addEventListener('click', saveNote);
+    markAttendanceBtn.addEventListener('click', toggleAttendance);
+    window.addEventListener('click', (e) => {
+        if (e.target === noteModal) {
+            closeNoteModal();
+        }
+    });
+
+    // --- PDF Download Function ---
+    function downloadCalendarAsPDF() {
+        const { jsPDF } = window.jspdf;
+        const calendarContent = document.getElementById('calendar');
+        const notes = JSON.parse(localStorage.getItem('calendarNotes')) || {};
+
+        // Temporarily add notes to the calendar for printing
+        const cellsWithNotes = calendarContent.querySelectorAll('.note-indicator');
+        cellsWithNotes.forEach(indicator => {
+            const cell = indicator.parentElement;
+            const dateStr = cell.dataset.date;
+            if (notes[dateStr]) {
+                const noteElement = document.createElement('div');
+                noteElement.className = 'note-for-pdf';
+                noteElement.textContent = notes[dateStr];
+                cell.appendChild(noteElement);
+                indicator.style.display = 'none';
+            }
+        });
+
+        html2canvas(calendarContent, {
+            scale: 2, // Higher scale for better quality
+            useCORS: true 
+        }).then(canvas => {
+            const imgData = canvas.toDataURL('image/png');
+            const pdf = new jsPDF({
+                orientation: 'landscape',
+                unit: 'pt',
+                format: [canvas.width, canvas.height]
+            });
+
+            pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+            pdf.save('calendar.pdf');
+        }).finally(() => {
+            // Clean up the added notes
+            calendarContent.querySelectorAll('.note-for-pdf').forEach(el => el.remove());
+            cellsWithNotes.forEach(indicator => {
+                indicator.style.display = '';
             });
         });
     }
