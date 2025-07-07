@@ -29,7 +29,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const noteInput = document.getElementById('note-input');
     const saveNoteBtn = document.getElementById('save-note-btn');
     const closeBtn = document.querySelector('.close-btn');
+    const busyCheckbox = document.getElementById('busy-checkbox');
     let currentNoteDate = null;
+    let displayedDate = new Date();
 
     // Whiteboard elements
     const whiteboardCanvas = document.getElementById('whiteboard-canvas');
@@ -39,6 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Load saved data on page load
     cleanAndLoadData();
+    setupCalendarNavigation();
     renderCalendar();
     
     // Whiteboard setup
@@ -330,11 +333,28 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // --- Calendar Functions ---
+    function setupCalendarNavigation() {
+        document.getElementById('prev-month-btn').addEventListener('click', () => {
+            displayedDate.setMonth(displayedDate.getMonth() - 1);
+            renderCalendar();
+        });
+
+        document.getElementById('next-month-btn').addEventListener('click', () => {
+            displayedDate.setMonth(displayedDate.getMonth() + 1);
+            renderCalendar();
+        });
+    }
+
     function renderCalendar() {
         const today = new Date();
-        today.setHours(0, 0, 0, 0); // Normalize today to the start of the day
-        const month = today.getMonth();
-        const year = today.getFullYear();
+        today.setHours(0, 0, 0, 0);
+        
+        const month = displayedDate.getMonth();
+        const year = displayedDate.getFullYear();
+
+        document.getElementById('calendar-month-year').textContent = 
+            `${displayedDate.toLocaleString('default', { month: 'long' })} ${year}`;
+
         const daysInMonth = new Date(year, month + 1, 0).getDate();
         const firstDayOfMonth = new Date(year, month, 1).getDay();
 
@@ -346,30 +366,35 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let attendance = JSON.parse(localStorage.getItem('attendance')) || {};
         let notes = JSON.parse(localStorage.getItem('calendarNotes')) || {};
+        let busyDates = JSON.parse(localStorage.getItem('calendarBusyDates')) || {};
 
         for (let day = 1; day <= daysInMonth; day++) {
             const dateStr = `${year}-${month + 1}-${day}`;
-            const cellDate = new Date(dateStr);
+            const cellDate = new Date(year, month, day);
+            cellDate.setHours(0,0,0,0);
+
             const isPresent = attendance[dateStr];
-            const isToday = day === today.getDate() && month === today.getMonth() && year === today.getFullYear();
+            const isToday = today.getTime() === cellDate.getTime();
             const isPast = cellDate < today;
             const note = notes[dateStr];
+            const isBusy = busyDates[dateStr];
 
             let cellClass = '';
             if (isToday) cellClass += 'today ';
+            if (isBusy) cellClass += 'busy ';
             if (isPresent) {
                 cellClass += 'present';
-            } else if (isPast) {
+            } else if (isPast && !isBusy) {
                 cellClass += 'absent';
             }
             
-            calendarHtml += `<td class="${cellClass}" data-date="${dateStr}">${day}`;
+            calendarHtml += `<td class="${cellClass.trim()}" data-date="${dateStr}">${day}`;
             if (note) {
                 calendarHtml += `<div class="note-indicator" title="${note}"></div>`;
             }
             calendarHtml += `</td>`;
 
-            if ((firstDayOfMonth + day) % 7 === 0) {
+            if ((firstDayOfMonth + day) % 7 === 0 && day < daysInMonth) {
                 calendarHtml += '</tr><tr>';
             }
         }
@@ -377,7 +402,7 @@ document.addEventListener('DOMContentLoaded', () => {
         calendarHtml += '</tr></tbody></table>';
         calendarElement.innerHTML = calendarHtml;
 
-        const calendarContainerHeader = document.querySelector('.calendar-container h2');
+        const calendarContainerHeader = document.querySelector('.calendar-header');
         if (calendarContainerHeader) {
             let downloadBtn = document.getElementById('download-pdf-btn');
             if (!downloadBtn) {
@@ -405,7 +430,11 @@ document.addEventListener('DOMContentLoaded', () => {
     function openNoteModal(dateStr) {
         currentNoteDate = dateStr;
         const notes = JSON.parse(localStorage.getItem('calendarNotes')) || {};
+        const busyDates = JSON.parse(localStorage.getItem('calendarBusyDates')) || {};
+        
         const note = notes[dateStr] || '';
+        const isBusy = busyDates[dateStr] || false;
+
         const formattedDate = new Date(dateStr).toLocaleDateString('en-US', {
             year: 'numeric',
             month: 'long',
@@ -414,6 +443,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         modalTitle.textContent = `Note for ${formattedDate}`;
         noteInput.value = note;
+        busyCheckbox.checked = isBusy;
         noteModal.style.display = 'flex';
     }
 
@@ -421,7 +451,7 @@ document.addEventListener('DOMContentLoaded', () => {
         noteModal.style.display = 'none';
         currentNoteDate = null;
         localStorage.setItem('calendarNotes', JSON.stringify(notes));
-        closeNoteModal();
+        localStorage.setItem('calendarBusyDates', JSON.stringify(busyDates));
         renderCalendar();
     }
 
@@ -436,8 +466,16 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             delete notes[currentNoteDate];
         }
-
         localStorage.setItem('calendarNotes', JSON.stringify(notes));
+
+        const busyDates = JSON.parse(localStorage.getItem('calendarBusyDates')) || {};
+        if (busyCheckbox.checked) {
+            busyDates[currentNoteDate] = true;
+        } else {
+            delete busyDates[currentNoteDate];
+        }
+        localStorage.setItem('calendarBusyDates', JSON.stringify(busyDates));
+
         closeNoteModal();
         renderCalendar();
     }
@@ -521,5 +559,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initial Load
     cleanAndLoadData();
+    setupCalendarNavigation();
     renderCalendar();
 }); 

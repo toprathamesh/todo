@@ -18,7 +18,11 @@
         </header>
 
         <div class="calendar-container">
-            <h2>Attendance</h2>
+            <div class="calendar-header">
+                <button id="prev-month-btn">&lt;</button>
+                <h2 id="calendar-month-year"></h2>
+                <button id="next-month-btn">&gt;</button>
+            </div>
             <div id="calendar"></div>
         </div>
 
@@ -74,7 +78,13 @@
             <span class="close-btn">&times;</span>
             <h2 id="modal-title"></h2>
             <textarea id="note-input" placeholder="Enter your note..."></textarea>
-            <button id="save-note-btn">Save Note</button>
+            <div class="modal-actions">
+                <label class="busy-label">
+                    <input type="checkbox" id="busy-checkbox">
+                    Mark as Busy
+                </label>
+                <button id="save-note-btn">Save Note</button>
+            </div>
         </div>
     </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
