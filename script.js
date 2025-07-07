@@ -101,7 +101,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- General Functions ---
     function updateDateTime() {
-        dateTimeElement.textContent = new Date().toLocaleString();
+        const now = new Date();
+        const dateOptions = { day: 'numeric', month: 'long', year: 'numeric' };
+        const timeOptions = { hour: 'numeric', minute: 'numeric', second: 'numeric' };
+        dateTimeElement.textContent = `${now.toLocaleDateString('en-GB', dateOptions)} ${now.toLocaleTimeString('en-US', timeOptions)}`;
     }
     setInterval(updateDateTime, 1000);
     updateDateTime();
@@ -115,7 +118,9 @@ document.addEventListener('DOMContentLoaded', () => {
     function addItem(type) {
         let link, note, list, storageKey, item;
         const now = new Date();
-        const timestamp = now.toLocaleString();
+        const dateOptions = { day: 'numeric', month: 'long', year: 'numeric' };
+        const timeOptions = { hour: 'numeric', minute: 'numeric', second: 'numeric' };
+        const timestamp = `${now.toLocaleDateString('en-GB', dateOptions)} ${now.toLocaleTimeString('en-US', timeOptions)}`;
 
         switch (type) {
             case 'learn':
@@ -443,7 +448,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const day = parts[2];
         const modalDate = new Date(year, month, day);
 
-        const formattedDate = modalDate.toLocaleDateString('en-US', {
+        const formattedDate = modalDate.toLocaleDateString('en-GB', {
             year: 'numeric',
             month: 'long',
             day: 'numeric'
