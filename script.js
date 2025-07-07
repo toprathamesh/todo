@@ -39,11 +39,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const clearBoardBtn = document.getElementById('clear-board-btn');
     const eraserBtn = document.getElementById('eraser-btn');
 
-    // Load saved data on page load
-    cleanAndLoadData();
-    setupCalendarNavigation();
-    renderCalendar();
-    
     // Whiteboard setup
     resizeCanvas();
     loadBoard();
