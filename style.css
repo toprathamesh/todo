@@ -18,7 +18,7 @@ body {
 
 header {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-end;
     align-items: center;
     margin-bottom: 25px;
     border-bottom: 1px solid #e9ecef;
@@ -29,6 +29,7 @@ h1 {
     color: #212529;
     margin: 0;
     font-weight: 600;
+    margin-right: auto;
 }
 
 #date-time {
