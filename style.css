@@ -35,6 +35,12 @@ h1 {
 #date-time {
     font-size: 1em;
     color: #6c757d;
+    display: flex;
+    align-items: center;
+}
+
+#date-time .date-part {
+    margin-right: 15px;
 }
 
 .calendar-container {

@@ -106,7 +106,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const month = now.getMonth() + 1;
         const year = now.getFullYear();
         const timeOptions = { hour: 'numeric', minute: 'numeric', second: 'numeric' };
-        dateTimeElement.textContent = `${day} / ${month} / ${year} ${now.toLocaleTimeString('en-US', timeOptions)}`;
+        
+        const dateString = `${day} / ${month} / ${year}`;
+        const timeString = now.toLocaleTimeString('en-US', timeOptions);
+
+        dateTimeElement.innerHTML = `<span class="date-part">${dateString}</span><span class="time-part">${timeString}</span>`;
     }
     setInterval(updateDateTime, 1000);
     updateDateTime();
